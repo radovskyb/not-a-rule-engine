@@ -3,14 +3,23 @@ package handler
 import (
 	"encoding/json"
 	"net/http"
+
+	"github.com/radovskyb/not-a-rule-engine/dispatcher"
+	"github.com/radovskyb/not-a-rule-engine/services"
 )
 
-type Handler struct{}
+type Handler struct {
+	d  dispatcher.Client
+	ss services.Store
+}
 
 type HandlerFunc func(w http.ResponseWriter, r *http.Request) error
 
-func New() *Handler {
-	return &Handler{}
+func New(d dispatcher.Client, ss services.Store) *Handler {
+	return &Handler{
+		d:  d,
+		ss: ss,
+	}
 }
 
 // Serve ...
