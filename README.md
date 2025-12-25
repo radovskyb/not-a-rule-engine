@@ -2,7 +2,7 @@
 
 ## What am I building?
 
-I'm not exactly sure yet, but it's definitely not a rule-engine.
+I'm not exactly sure yet, but it's definitely not a rule-engine, and I should probably try to work out what I'm actually trying to build before I continue.
 
 ## What's the goal?
 
