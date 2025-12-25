@@ -38,6 +38,8 @@ func (h *Handler) Ingest(w http.ResponseWriter, r *http.Request) error {
 
 	for _, ev := range evs {
 		go func(ctx context.Context, resps chan Response) {
+			defer wg.Done()
+
 			var resp Response
 
 			service, err := h.ss.Fetch(ev.Type)

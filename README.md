@@ -16,3 +16,8 @@ That in itself isn't a challenge for people like myself who predominantly don't 
 ## Why now?
 
 Sh\*ts and g\*ggles, why not.
+
+## Current way to call API
+
+curl -X POST http://localhost:9000/api/ingest \
+    -d '[{"type": 1, "payload": "- payload data -"}, {"type": 2, "payload": {"- payload key -": "- payload val -"}}]'
