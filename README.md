@@ -19,5 +19,26 @@ Sh\*ts and g\*ggles, why not.
 
 ## Current way to call API
 
+### Data to send
+
+Array of the following (services are called concurrently within the ingest handler, and for now responses are aggregated and returned at the same time)
+
+1. type -> service type (e.g cache, log, etc.)
+2. payload  -> this is going to be basically function name to call and then key value pairs for function params if any.
+
 curl -X POST http://localhost:9000/api/ingest \
-    -d '[{"type": 1, "payload": "- payload data -"}, {"type": 2, "payload": {"- payload key -": "- payload val -"}}]'
+    -d '[{"type": 1, "payload": "- payload data -"}, {"type": 2, "payload": {"- payload key -": "- payload key val pairs -"}}]'
+
+## Current expected response from a service will be something in this format.
+
+### Service response
+
+Array ruturned of each service's response.
+
+Each response should contain data if successful (can be empty of course), and any potential errors from the service.
+
+[{"data":null,"error":null},{"data":null,"error":null}]
+
+## Other responses
+
+Not implemented yet, but non-service related responses will be returned as JSON at some stage in a custom error type once I implement the error checking function in handler.go
