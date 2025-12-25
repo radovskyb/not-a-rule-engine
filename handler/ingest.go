@@ -1,16 +1,11 @@
 package handler
 
 import (
+	"context"
 	"encoding/json"
 	"log"
 	"net/http"
-)
-
-// These would be moved to a shared lookup.
-//
-// TODO: Move hardcoded val from main.go and add in a config file.
-const (
-	CacheService = 123
+	"sync"
 )
 
 type Event struct {
@@ -18,29 +13,63 @@ type Event struct {
 	Payload any `json:"payload"`
 }
 
+type Response struct {
+	Data  any   `json:"data"`
+	Error error `json:"error"`
+}
+
 // Ingest sounds like a cool name for whatever this is going to end up being. Definitely not for a rule engine tho :(
 func (h *Handler) Ingest(w http.ResponseWriter, r *http.Request) error {
 	log.Println("nom nom")
 
-	var ev Event
-	if err := json.NewDecoder(r.Body).Decode(&ev); err != nil {
+	var evs []Event
+	if err := json.NewDecoder(r.Body).Decode(&evs); err != nil {
 		return err
 	}
 
-	// NOTE:
-	// May want to fan-out to multiple services, so will probably change to accept []Event instead of Event and
-	// iterate / pass to worker pool here or something.
+	resps := make(chan Response, len(evs))
 
-	service, err := h.ss.Fetch(ev.Type)
-	if err != nil {
-		return err
+	// Move workers into somewhere else like dispatch maybe?
+	var wg sync.WaitGroup
+	wg.Add(len(evs))
+
+	ctx, cancel := context.WithCancel(r.Context())
+	defer cancel()
+
+	for _, ev := range evs {
+		go func(ctx context.Context, resps chan Response) {
+			var resp Response
+
+			service, err := h.ss.Fetch(ev.Type)
+			if err != nil {
+				resp.Error = err
+				resps <- resp
+				return
+			}
+			// Dispatch will handle converting into the correct payload format for the service.
+			data, err := h.d.Dispatch(ctx, service, ev.Payload)
+			if err != nil {
+				resp.Error = err
+				resps <- resp
+				return
+			}
+
+			resp.Data = data
+
+			resps <- resp
+		}(ctx, resps)
 	}
 
-	// Dispatch will handle converting into the correct payload format for the service.
-	resp, err := h.d.Dispatch(service, ev.Payload)
-	if err != nil {
-		return err
+	go func() {
+		wg.Wait()
+		close(resps)
+	}()
+
+	respReturns := []Response{}
+
+	for resp := range resps {
+		respReturns = append(respReturns, resp)
 	}
 
-	return json.NewEncoder(w).Encode(resp)
+	return json.NewEncoder(w).Encode(respReturns)
 }

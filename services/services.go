@@ -1,16 +1,24 @@
 package services
 
 import (
+	"context"
 	"errors"
 	"log"
+	"reflect"
 	"sync"
 )
 
+const CacheServiceID = 1
+const LogServiceID = 2
+
+// FncParam is a lookup for param name e.g Key, to the type allowed.
+type FncParam map[string]reflect.Type
+
 type Service interface {
-	// TODO: Common service methods?
-	//
-	// For now, service will just pass params, data, and return any response and/or error.
-	Call(params any) (any, error)
+	Call(ctx context.Context, params any) (any, error)
+
+	// For now, I'll start with Funcs that returns the service type and map of function names with associated params.
+	Funcs() (int, map[string]FncParam)
 }
 
 type Store interface {

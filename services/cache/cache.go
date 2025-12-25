@@ -1,38 +1,18 @@
 package cache
 
 import (
-	"errors"
+	"context"
 	"log"
-	"strconv"
 	"sync"
+
+	"github.com/radovskyb/not-a-rule-engine/services"
 )
 
-type Fnc int
-
-const (
-	Get Fnc = iota
-	Set
-	Delete
-)
-
-type Params struct {
-	FncType Fnc    `json:"fnc"`
-	Key     string `json:"key"`
-	Val     any    `json:"val"`
-}
-
-type Response struct {
-	Hit  bool
-	Data any
-}
-
-// Generic in-mem cache for now.
-
+// Cache is just a generic in-mem cache for now.
 type Cache interface {
-	Call(params, data any) error
-	Get(key string) (any, bool)
-	Set(key string, value any)
-	Delete(key string)
+	Get(ctx context.Context, key string) (any, bool)
+	Set(ctx context.Context, key string, value any)
+	Delete(ctx context.Context, key string)
 }
 
 type cache struct {
@@ -47,56 +27,18 @@ func New() *cache {
 	}
 }
 
-// The way I'm going about this seems a bit convoluted. Might change this pattern at some stage.
-func (c *cache) Call(params any) (any, error) {
+func (c *cache) Call(ctx context.Context, params any) (any, error) {
 	log.Println("calling cache service")
 
-	pMap, ok := params.(map[string]any)
-	if !ok {
-		return nil, errors.New("invalid cache params")
-	}
-
-	// Would validate these or convert some other way.
-	var p Params
-
-	fncVal, ok := pMap["fnc"].(string)
-	if !ok {
-		p.FncType = -1
-	}
-
-	fncInt, err := strconv.Atoi(fncVal)
-	if err != nil {
-		return nil, err
-	}
-
-	p.FncType = Fnc(fncInt)
-
-	key, ok := pMap["key"].(string)
-	if ok {
-		p.Key = key
-	}
-	val, found := pMap["val"]
-	if found {
-		p.Val = val
-	}
-
-	switch p.FncType {
-	case Get:
-		val, found := c.Get(p.Key)
-		return &Response{Data: val, Hit: found}, nil
-	case Set:
-		c.Set(p.Key, p.Val)
-		return nil, nil
-	case Delete:
-		c.Delete(p.Key)
-		return nil, nil
-	default:
-	}
-
-	return nil, errors.New("invalid cache fnc")
+	return nil, nil
 }
 
-func (c *cache) Get(key string) (any, bool) {
+func (c *cache) Funcs() (int, map[string]services.FncParam) {
+	log.Println("retrieving allowed funcs + params for cache service")
+	return services.CacheServiceID, nil
+}
+
+func (c *cache) Get(ctx context.Context, key string) (any, bool) {
 	c.mu.RLock()
 	defer c.mu.RUnlock()
 
@@ -104,14 +46,14 @@ func (c *cache) Get(key string) (any, bool) {
 	return item, found
 }
 
-func (c *cache) Set(key string, value any) {
+func (c *cache) Set(ctx context.Context, key string, value any) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
 	c.items[key] = value
 }
 
-func (c *cache) Delete(key string) {
+func (c *cache) Delete(ctx context.Context, key string) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
 
