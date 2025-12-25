@@ -4,6 +4,9 @@
 
 I'm not exactly sure yet, but it's definitely not a rule-engine, and I should probably try to work out what I'm actually trying to build before I continue.
 
+Updates:
+- Hmm, starting to look like some sort of service proxy? Not sure yet.
+
 ## What's the goal?
 
 Just felt like writing some good old fashioned code without any AI or tools, like we all used to do.
